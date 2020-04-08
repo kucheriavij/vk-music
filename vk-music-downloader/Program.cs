@@ -39,9 +39,8 @@ namespace VkMusicDownloader
                     try
                     {
                         var auth = new VkAuth(_login, _passworg);
-                        string GetInfo = auth.Auth();
 
-                        switch (auth.CheckAuth(GetInfo))
+                        switch (auth.CheckAuth())
                         {
                             case 1:
                                 Console.Out.WriteLine("You are logged");
