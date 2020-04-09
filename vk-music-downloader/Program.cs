@@ -9,36 +9,41 @@ namespace VkMusicDownloader
         {
             CommandLineApplication app = new CommandLineApplication();
 
-            CommandLineApplication auth = app.Command("auth", config => {
-                config.Description = "Login or logout in https://vk.com";
-                config.HelpOption("-? | -h | --help");
-                config.OnExecute(() => {
-                    config.ShowHelp("auth");
-                    return 0;
-                });
-            });
-
-            auth.Command("login", config => {
+            CommandLineApplication auth = app.Command("auth", config =>
+            {
                 config.Description = "Login in https://vk.com";
                 config.HelpOption("-? | -h | --help");
 
-                CommandArgument login = config.Argument("login", "Your email or phone number", false);
-                CommandArgument password = config.Argument("password", "Your password");
+                CommandOption login = config.Option("-u", "Your email or phone number", CommandOptionType.SingleValue);
+                CommandOption password = config.Option("-p", "Your password", CommandOptionType.SingleValue);
+                CommandOption uid = config.Option("-uid", "Vk user id", CommandOptionType.SingleValue);
 
-                config.OnExecute(() => {
-                    string _login = login.Value;
-                    string _passworg = password.Value;
-
-                    if(string.IsNullOrWhiteSpace(_login) && string.IsNullOrWhiteSpace(_passworg))
+                config.OnExecute(() =>
+                {
+                    if (!login.HasValue() && !password.HasValue() && !uid.HasValue())
                     {
-                        Console.Out.WriteLine($"Arguments {login.Name} and {password.Name} not set. Please enter your email and passwor or run auth -h");
-                        
+                        config.ShowHelp("auth");
                         return 0;
                     }
 
+                    if (!login.HasValue())
+                    {
+                        Console.Error.WriteLine("Login is required");
+                    }
+
+                    if (!password.HasValue())
+                    {
+                        Console.Error.WriteLine("Password is required");
+                    }
+
+                    string _login = login.Value();
+                    string _password = password.Value();
+                    Config.CreateConfig(uid.Value());
+
                     try
                     {
-                        var auth = new VkAuth(_login, _passworg);
+                        var auth = new VkAuth(_login, _password);
+                        Console.Out.WriteLine(auth.Cookie);
 
                         switch (auth.CheckAuth())
                         {
@@ -61,6 +66,27 @@ namespace VkMusicDownloader
 
                         return 0;
                     }
+                });
+            });
+
+            CommandLineApplication music = app.Command("music", config =>
+            {
+                config.Description = "Get music from you vk";
+                config.HelpOption("-? | -h | --help");
+
+                CommandOption list = config.Option("-l | --list", "Music list", CommandOptionType.NoValue);
+
+                config.OnExecute(() =>
+                {
+                    if (!list.HasValue())
+                    {
+                        config.ShowHelp("music");
+                        return 0;
+                    }
+
+
+
+                    return 0;
                 });
             });
 

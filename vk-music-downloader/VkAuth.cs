@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Leaf.xNet;
+using Newtonsoft.Json.Linq;
 
 namespace VkMusicDownloader
 {
@@ -15,11 +16,14 @@ namespace VkMusicDownloader
         private string Ip_H { get; set; }
         private string Lg_H { get; set; }
         public string Cookie { get; set; }
+        private string UID { get; set; }
 
         public VkAuth(string Login, string Password)
         {
+            JObject config = Config.ReadConfig();
             this.Login = Login;
             this.Password = Password;
+            UID = (string)config["uid"];
             ParseDataAuth();
         }
 
@@ -65,7 +69,9 @@ namespace VkMusicDownloader
             Params["pass"] = Password;
 
             string response = request.Post(VkLoginUrl, Params).ToString();
-            Cookie = request.Cookies.GetCookieHeader(VkMainPage);
+            Cookie = request.Cookies.GetCookieHeader(VkMainPage + "/id" + UID);
+
+            CookiesSaveReadFile.WriteCookies(Cookie);
 
             return response;
         }
