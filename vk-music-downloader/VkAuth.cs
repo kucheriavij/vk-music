@@ -13,17 +13,17 @@ namespace VkMusicDownloader
         const string VkLoginUrl = "https://login.vk.com/?act=login";
         private string Login { get; set; }
         private string Password { get; set; }
-        private string Ip_H { get; set; }
-        private string Lg_H { get; set; }
+        private string IpH { get; set; }
+        private string LgH { get; set; }
         public string Cookie { get; set; }
-        private string UID { get; set; }
+        private string Uid { get; set; }
 
-        public VkAuth(string Login, string Password)
+        public VkAuth(string login, string password)
         {
             JObject config = Config.ReadConfig();
-            this.Login = Login;
-            this.Password = Password;
-            UID = (string)config["uid"];
+            Login = login;
+            Password = password;
+            Uid = (string)config["uid"];
             ParseDataAuth();
         }
 
@@ -42,10 +42,10 @@ namespace VkMusicDownloader
 
         private void ParseDataAuth()
         {
-            HttpResponse AuthData = GetAuth();
-            Ip_H = System.Text.RegularExpressions.Regex.Match(AuthData.ToString(), "name=\"ip_h\" value=\"(.*?)\"").Groups[1].Value;
-            Lg_H = System.Text.RegularExpressions.Regex.Match(AuthData.ToString(), "name=\"lg_h\" value=\"(.*?)\"").Groups[1].Value;
-            Cookie = AuthData.Cookies.GetCookieHeader(VkLoginPage);
+            HttpResponse authData = GetAuth();
+            IpH = System.Text.RegularExpressions.Regex.Match(authData.ToString(), "name=\"ip_h\" value=\"(.*?)\"").Groups[1].Value;
+            LgH = System.Text.RegularExpressions.Regex.Match(authData.ToString(), "name=\"lg_h\" value=\"(.*?)\"").Groups[1].Value;
+            Cookie = authData.Cookies.GetCookieHeader(VkLoginPage);
         }
 
         private string Auth()
@@ -59,17 +59,19 @@ namespace VkMusicDownloader
             request.UserAgentRandomize();
             request.KeepAlive = false;
 
-            RequestParams Params = new RequestParams();
-            Params["act"] = "login";
-            Params["role"] = "al_frame";
-            Params["_origin"] = VkMainPage;
-            Params["ip_h"] = Ip_H;
-            Params["lg_h"] = Lg_H;
-            Params["email"] = Login;
-            Params["pass"] = Password;
+            RequestParams requestParams = new RequestParams
+            {
+                ["act"] = "login",
+                ["role"] = "al_frame",
+                ["_origin"] = VkMainPage,
+                ["ip_h"] = IpH,
+                ["lg_h"] = LgH,
+                ["email"] = Login,
+                ["pass"] = Password
+            };
 
-            string response = request.Post(VkLoginUrl, Params).ToString();
-            Cookie = request.Cookies.GetCookieHeader(VkMainPage + "/id" + UID);
+            string response = request.Post(VkLoginUrl, requestParams).ToString();
+            Cookie = request.Cookies.GetCookieHeader(VkMainPage + "/id" + Uid);
 
             CookiesSaveReadFile.WriteCookies(Cookie);
 
@@ -78,18 +80,18 @@ namespace VkMusicDownloader
 
         public int CheckAuth()
         {
-            string Auths = Auth();
+            string auths = Auth();
             int result = 0;
 
-            if (System.Text.RegularExpressions.Regex.Match(Auths, "Notifier.init((.*))").Groups[1].Value.Length > 0)
+            if (System.Text.RegularExpressions.Regex.Match(auths, "Notifier.init((.*))").Groups[1].Value.Length > 0)
             {
                 result = 1;
             }
-            else if (Auths.Contains("try{parent.location.href='/login?act=authcheck'}catch(e){}"))
+            else if (auths.Contains("try{parent.location.href='/login?act=authcheck'}catch(e){}"))
             {
                 result = 2;
             }
-            else if (Auths.Contains("parent.stManager.add(['notifier.js', 'notifier.css'], function() {"))
+            else if (auths.Contains("parent.stManager.add(['notifier.js', 'notifier.css'], function() {"))
             {
                 result = 0;
             }

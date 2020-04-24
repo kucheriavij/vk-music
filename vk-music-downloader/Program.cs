@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.CommandLineUtils;
 using System;
+using HtmlAgilityPack;
+using System.Text;
 
 namespace VkMusicDownloader
 {
@@ -7,16 +9,16 @@ namespace VkMusicDownloader
     {
         static void Main(string[] args)
         {
-            CommandLineApplication app = new CommandLineApplication();
+            var app = new CommandLineApplication();
 
-            CommandLineApplication auth = app.Command("auth", config =>
+            var auth = app.Command("auth", config =>
             {
                 config.Description = "Login in https://vk.com";
                 config.HelpOption("-? | -h | --help");
 
-                CommandOption login = config.Option("-u", "Your email or phone number", CommandOptionType.SingleValue);
-                CommandOption password = config.Option("-p", "Your password", CommandOptionType.SingleValue);
-                CommandOption uid = config.Option("-uid", "Vk user id", CommandOptionType.SingleValue);
+                var login = config.Option("-u", "Your email or phone number", CommandOptionType.SingleValue);
+                var password = config.Option("-p", "Your password", CommandOptionType.SingleValue);
+                var uid = config.Option("-uid", "Vk user id", CommandOptionType.SingleValue);
 
                 config.OnExecute(() =>
                 {
@@ -35,17 +37,15 @@ namespace VkMusicDownloader
                     {
                         Console.Error.WriteLine("Password is required");
                     }
-
-                    string _login = login.Value();
-                    string _password = password.Value();
+                    
                     Config.CreateConfig(uid.Value());
 
                     try
                     {
-                        var auth = new VkAuth(_login, _password);
-                        Console.Out.WriteLine(auth.Cookie);
+                        var vkAuth = new VkAuth(login.Value(), password.Value());
+                        Console.Out.WriteLine(vkAuth.Cookie);
 
-                        switch (auth.CheckAuth())
+                        switch (vkAuth.CheckAuth())
                         {
                             case 1:
                                 Console.Out.WriteLine("You are logged");
@@ -60,21 +60,21 @@ namespace VkMusicDownloader
 
                         return 0;
                     }
-                    catch (Exception E)
+                    catch (Exception e)
                     {
-                        Console.Error.WriteLine($"Login faild. Check login or password. Err: {E}");
+                        Console.Error.WriteLine($"Login faild. Check login or password. Err: {e}");
 
                         return 0;
                     }
                 });
             });
 
-            CommandLineApplication music = app.Command("music", config =>
+            var music = app.Command("music", config =>
             {
                 config.Description = "Get music from you vk";
                 config.HelpOption("-? | -h | --help");
 
-                CommandOption list = config.Option("-l | --list", "Music list", CommandOptionType.NoValue);
+                var list = config.Option("-l | --list", "Music list", CommandOptionType.NoValue);
 
                 config.OnExecute(() =>
                 {
@@ -83,8 +83,18 @@ namespace VkMusicDownloader
                         config.ShowHelp("music");
                         return 0;
                     }
-
-
+                    
+                    var m = new Music();
+                    var htmlDoc = new HtmlDocument();
+                    htmlDoc.LoadHtml(m.GetMusicPage().ToString());
+                    var htmlBody = htmlDoc.DocumentNode.SelectNodes("//div[contains(@class, 'audio_row__inner')]");
+                    foreach (var item in htmlBody)
+                    {
+                        var trackName = item.SelectSingleNode("//span[contains(@class, 'audio_row__title_inner _audio_row__title_inner')]");
+                        var trackArtistName = item.SelectSingleNode("//a[contains(@class, 'artist_link')]");
+                        
+                        Console.Out.WriteLine(trackName.InnerHtml + " - " + trackArtistName.InnerHtml);
+                    }
 
                     return 0;
                 });
