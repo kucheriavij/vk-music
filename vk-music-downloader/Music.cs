@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+using System.Text.RegularExpressions;
 using Leaf.xNet;
 using Newtonsoft.Json.Linq;
 using HtmlAgilityPack;
@@ -9,18 +8,25 @@ namespace VkMusicDownloader
 {
     class Music
     {
-        const string VkMusicPageUrl = "https://vk.com/audios";
+        const string VkMusicPageUrl = "https://m.vk.com/audio";
         private string Cookie { get; set; }
         private string Uid { get; set; }
+        private int TotalCount { get; set; }
 
         public Music()
         {
             JObject config = Config.ReadConfig();
             Cookie = CookiesSaveReadFile.ReadCookies();
             Uid = (string)config["uid"];
+
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(GetMusicPage().ToString());
+            var node = htmlDoc.DocumentNode.SelectSingleNode("//div[contains(@class, 'audioPage__count')]");
+            var value = Regex.Match(node.InnerHtml, @"\d+").Value;
+            TotalCount = Convert.ToInt32(value);
         }
 
-        public HttpResponse GetMusicPage()
+        private HttpResponse GetMusicPage(int offset = 0)
         {
             HttpRequest request = new HttpRequest();
             request.AddHeader("Upgrade-Insecure-Requests", "1");
@@ -28,21 +34,50 @@ namespace VkMusicDownloader
             request.UserAgentRandomize();
             request.KeepAlive = false;
 
-            HttpResponse response = request.Get(VkMusicPageUrl + Uid);
+            RequestParams requestParams = new RequestParams
+            {
+                ["offset"] = offset,
+                ["next_from"] = null
+            };
+
+            HttpResponse response = request.Get(VkMusicPageUrl, requestParams);
 
             return response;
         }
 
-        private HtmlDocument LoadVkMusicPage()
+        public void GetAudioList()
         {
-            HtmlWeb web = new HtmlWeb();
+            for (int i = 0; i < TotalCount; i += 100)
+            {
+                var htmlDoc = new HtmlDocument();
+                htmlDoc.LoadHtml(GetMusicPage(i).ToString());
+                var nodes = htmlDoc.DocumentNode.SelectNodes("//div[contains(@class, 'ai_label')]");
 
-            return web.Load(VkMusicPageUrl + Uid);
-        }
+                foreach (var node in nodes)
+                {
+                    var children = node.ChildNodes;
+                    string artistName = "";
+                    string trackName = "";
 
-        public HtmlNodeCollection GetAudioList(string pattern = "//*[@id=\"content\"]/div/div[2]/div[2]/div[2]/div/div/div[3]/div[1]/div[1]/div[2]/div[1]")
-        {
-            return LoadVkMusicPage().DocumentNode.SelectNodes(pattern);
+                    foreach (var child in children)
+                    {
+                        if (child.HasClass("ai_title"))
+                        {
+                            trackName = child.InnerHtml.Trim();
+                        }
+
+                        if (child.HasClass("ai_artist"))
+                        {
+                            artistName = child.InnerHtml.Trim();
+                        }
+                    }
+
+                    if (trackName.Length > 0 && artistName.Length > 0)
+                    {
+                        Console.Out.WriteLine(System.Net.WebUtility.HtmlDecode(artistName) + " - " + System.Net.WebUtility.HtmlDecode(trackName));
+                    }
+                }
+            }
         }
     }
 }

@@ -85,16 +85,7 @@ namespace VkMusicDownloader
                     }
                     
                     var m = new Music();
-                    var htmlDoc = new HtmlDocument();
-                    htmlDoc.LoadHtml(m.GetMusicPage().ToString());
-                    var htmlBody = htmlDoc.DocumentNode.SelectNodes("//div[contains(@class, 'audio_row__inner')]");
-                    foreach (var item in htmlBody)
-                    {
-                        var trackName = item.SelectSingleNode("//span[contains(@class, 'audio_row__title_inner _audio_row__title_inner')]");
-                        var trackArtistName = item.SelectSingleNode("//a[contains(@class, 'artist_link')]");
-                        
-                        Console.Out.WriteLine(trackName.InnerHtml + " - " + trackArtistName.InnerHtml);
-                    }
+                    m.GetAudioList();
 
                     return 0;
                 });

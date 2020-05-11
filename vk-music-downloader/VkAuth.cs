@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Leaf.xNet;
+﻿using Leaf.xNet;
 using Newtonsoft.Json.Linq;
 
 namespace VkMusicDownloader
@@ -51,7 +48,7 @@ namespace VkMusicDownloader
         private string Auth()
         {
             HttpRequest request = new HttpRequest();
-            request.AddHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+            request.AddHeader("Accept","text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
             request.AddHeader("Content-Type", "application/x-www-form-urlencoded");
             request.AddHeader("Upgrade-Insecure-Requests", "1");
             request.AddHeader("Cookie", Cookie);
